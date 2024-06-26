@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Dashboard</title>
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <!-- Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <!-- Firebase Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e0e5ec;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 95%;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #e0e5ec;
+            border-radius: 20px;
+            box-shadow: 20px 20px 60px #bebebe, -20px -20px 60px #ffffff;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #e0e5ec;
+            border-radius: 20px;
+            box-shadow: inset 20px 20px 60px #bebebe, inset -20px -20px 60px #ffffff;
+        }
+        .section h2 {
+            color: #007bff;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 5px;
+        }
+        .section p {
+            margin: 10px 0;
+            color: #555;
+        }
+        .card, .booking {
+            padding: 20px;
+            margin-bottom: 15px;
+            background-color: #e0e5ec;
+            border-radius: 15px;
+            box-shadow: 5px 5px 15px #bebebe, -5px -5px 15px #ffffff;
+        }
+        .card p, .booking p {
+            margin: 10px 0;
+            color: #555;
+        }
+        .card p span, .booking p span {
+            font-weight: bold;
+            color: #333;
+        }
+        .message {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+        .button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 5px 5px 15px #bebebe, -5px -5px 15px #ffffff;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="userName">Hi, User</h1>
+        <div class="section" id="userDetails">
+            <h2>User Details</h2>
+            <p id="userEmail">Email: </p>
+            <p id="userPhone">Phone: </p>
+        </div>
+        <div class="section" id="cardDetails">
+            <h2>Saved Cards</h2>
+            <div id="cardsList"></div>
+            <div class="message" id="noCardsMessage"></div>
+            <a href="addcard.html" class="button" id="addCardButton" style="display: none;">Add Card</a>
+        </div>
+        <div class="section" id="bookingHistory">
+            <h2>Booking History</h2>
+            <div id="bookingList"></div>
+            <div class="message" id="noBookingMessage"></div>
+            <a href="addbooking.html" class="button" id="addBookingButton" style="display: none;">Add Booking</a>
+        </div>
+    </div>
+
+    <script>
+        // TODO: Replace with your Firebase project's configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAtVvPjdsj84mWqaG4-7SyjbljCnslZ1SM",
+  authDomain: "hendaa-1.firebaseapp.com",
+  databaseURL: "https://hendaa-1-default-rtdb.firebaseio.com",
+  projectId: "hendaa-1",
+  storageBucket: "hendaa-1.appspot.com",
+  messagingSenderId: "831134776479",
+  appId: "1:831134776479:web:56cd7098fc69cd70a376aa"
+};
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Helper function to mask card number
+        function maskCardNumber(cardNumber) {
+            return cardNumber.slice(0, 4) + '************' + cardNumber.slice(-4);
+        }
+
+        // Helper function to format the date
+        function formatDate(date) {
+            const d = new Date(date.seconds * 1000);
+            return d.toLocaleString();
+        }
+
+        // Fetch and display user details
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                const userNameElement = document.getElementById('userName');
+                const userEmailElement = document.getElementById('userEmail');
+                const userPhoneElement = document.getElementById('userPhone');
+                userNameElement.innerText = `Hi, ${user.displayName || 'User'}`;
+                userEmailElement.innerText = `Email: ${user.email}`;
+
+                db.collection('users').doc(user.uid).get().then(doc => {
+                    if (doc.exists) {
+                        const userData = doc.data();
+                        userPhoneElement.innerText = `Phone: ${userData.phone || 'Not provided'}`;
+                    }
+                });
+
+                // Fetch and display saved cards
+                const cardsList = document.getElementById('cardsList');
+                const noCardsMessage = document.getElementById('noCardsMessage');
+                const addCardButton = document.getElementById('addCardButton');
+
+                db.collection('users').doc(user.uid).collection('cards').get()
+                    .then(snapshot => {
+                        if (snapshot.empty) {
+                            noCardsMessage.innerText = 'No saved cards found.';
+                            addCardButton.style.display = 'inline-block';
+                        } else {
+                            snapshot.forEach(doc => {
+                                const cardData = doc.data();
+                                const cardElement = document.createElement('div');
+                                cardElement.className = 'card';
+                                cardElement.innerHTML = `
+                                    <p><span>Card Name:</span> ${cardData.cardName}</p>
+                                    <p><span>Card Number:</span> ${maskCardNumber(cardData.cardNumber)}</p>
+                                    <p><span>Expiry Date:</span> ${cardData.expiryDate}</p>
+                                `;
+                                cardsList.appendChild(cardElement);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching cards:', error);
+                        noCardsMessage.innerHTML = 'Error loading cards. Please try again later.';
+                    });
+
+                // Fetch and display booking history
+                const bookingList = document.getElementById('bookingList');
+                const noBookingMessage = document.getElementById('noBookingMessage');
+                const addBookingButton = document.getElementById('addBookingButton');
+
+                db.collection('users').doc(user.uid).collection('bookings').get()
+                    .then(snapshot => {
+                        if (snapshot.empty) {
+                            noBookingMessage.innerText = 'No bookings found.';
+                            addBookingButton.style.display = 'inline-block';
+                        } else {
+                            snapshot.forEach(doc => {
+                                const bookingData = doc.data();
+                                const bookingElement = document.createElement('div');
+                                bookingElement.className = 'booking';
+                                bookingElement.innerHTML = `
+                                    <p><span>Appointment Type:</span> ${bookingData.appointmentType}</p>
+                                    <p><span>Time:</span> ${bookingData.time}</p>
+                                    <p><span>Date:</span> ${formatDate(bookingData.date)}</p>
+                                `;
+                                bookingList.appendChild(bookingElement);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching booking history:', error);
+                        noBookingMessage.innerHTML = 'Error loading bookings. Please try again later.';
+                    });
+            } else {
+                // Redirect to login page if not authenticated
+                window.location.href = '/login.html';
+            }
+        });
+    </script>
+</body>
+</html>
