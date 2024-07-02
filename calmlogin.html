@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-image: url('afa63144836941f1c5355f2cd5d9d0ed.jpg'); /* Replace with your image path */
+            background-size: cover;
+            background-position: center;
+            font-family: Arial, sans-serif;
+        }
+        .login-container {
+            
+            padding: 20px;
+            border-radius: 10px;
+          
+            text-align: center;
+        }
+        .login-container h2 {
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        .login-container label {
+    display: block;
+    margin-bottom: 5px;
+                  color: #3d3e3e;
+              font-family: 'Montserrat', sans-serif;
+  
+  left: 0;
+  top: 13px;
+  font-weight: 600;
+  transition: top 0.3s, font-size 0.3s;
+}
+        .login-container input {
+            width: 90%;
+            padding: 15px;
+            margin: 10px 0;
+            font-size: 16px;
+            font-weight: bold;
+            background: transparent;
+            color: #ffffff;
+            border: 1px solid #fff;
+            border-radius: 5px;
+        }
+        .login-container button {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            background-color: #ffffff;
+            color: #f00;
+            border: 1px solid #051650;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .login-container button:hover {
+            background-color: #cccccc;
+            color: #111;
+        }
+        .login-container .links {
+            margin-top: 15px;
+        }
+        .login-container .links a {
+            color: #f4f4f4;
+            text-decoration: none;
+        }
+        .login-container .links a:hover {
+            text-decoration: underline;
+        }
+        .title {
+          color: #fff;
+          margin-bottom: 10px;
+      
+          text-align: center;
+          
+          border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+      
+      <h1 class="title">Welcome back<br>Login to Continue</h1>
+        
+        <form id="signin-form">
+          
+            <input type="email" id="email" name="username" placeholder="Email" required>
+            
+            <input type="password" id="password" name="password" placeholder="Password" required>
+            <br>
+            
+            <br>
+            <button type="submit">LOGIN</button>
+        </form>
+                 <p id="error-message" class="error-message"></p>
+        <div class="links">
+            <a href="#">Forgot password?</a><br>
+            <a href="#">Don't have an account yet?</a>
+        </div>
+    </div>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            // Add your login logic here
+            alert('Login attempted with Username: ' + username + ' and Password: ' + password);
+        });
+    </script>
+
+    </div>
+    <script src="https://www.gstatic.com/firebasejs/8.2.10/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.2.10/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.2.10/firebase-firestore.js"></script>
+    <script>
+        // Initialize Firebase
+        var firebaseConfig = {
+  apiKey: "AIzaSyAtVvPjdsj84mWqaG4-7SyjbljCnslZ1SM",
+  authDomain: "hendaa-1.firebaseapp.com",
+  databaseURL: "https://hendaa-1-default-rtdb.firebaseio.com",
+  projectId: "hendaa-1",
+  storageBucket: "hendaa-1.appspot.com",
+  messagingSenderId: "831134776479",
+  appId: "1:831134776479:web:56cd7098fc69cd70a376aa"
+};
+        firebase.initializeApp(firebaseConfig);
+        
+        // Initialize Firebase services
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        db.settings({ timestampsInSnapshots: true });
+
+        // Function to handle user sign-in
+        function signIn(email, password) {
+            auth.signInWithEmailAndPassword(email, password)
+                .then((cred) => {
+                    // Check if the user document exists in Firestore
+                    const userId = cred.user.uid;
+                    const userRef = db.collection('users').doc(userId);
+
+                    userRef.get().then((doc) => {
+                        if (!doc.exists) {
+                            // If the user document doesn't exist, create it with balance set to zero
+                            userRef.set({
+                                balance: 0
+                            }).then(() => {
+                                console.log("User document created with balance set to zero.");
+                            }).catch((error) => {
+                                console.error("Error creating user document:", error);
+                            });
+                        } else {
+                            console.log("User document already exists.");
+                        }
+                        // Redirect the user to the desired page after sign-in
+                        window.location.href = "wow.html";
+                    }).catch((error) => {
+                        console.error("Error getting user document:", error);
+                    });
+                })
+                .catch((error) => {
+                    alert(error.message);
+                });
+        }
+
+        // Event listener for form submission
+        document.getElementById('signin-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            signIn(email, password);
+        });
+    </script>
+</body>
+</html>
